@@ -14,7 +14,7 @@ var (
 	//configFileName = flag.String("c", "./configs.yaml", "设置配置文件地址")
 	// 远程配置文件参数 http://127.0.0.1:4001/config/hugo.json
 	//remoteConfigEndPoint = flag.String("rcep", "", "远程配置文件url")
-	defaultTag = "json"
+	defaultTag = "yaml"
 	defaultEnv = true
 )
 
