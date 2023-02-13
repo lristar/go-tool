@@ -5,8 +5,6 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
 	"net/url"
-	"os"
-	"strings"
 )
 
 var (
@@ -78,7 +76,7 @@ func Setup(configName string, cfg interface{}, ops ...Option) error {
 	v := viper.NewWithOptions()
 	//自动获取全部的env加入到viper中。（如果环境变量多就全部加进来）默认别名和环境变量名一致
 	if opt.env {
-		setEnvToViper(v)
+		v.AutomaticEnv()
 	}
 	//配置文件位置
 	v.SetConfigFile(configName)
@@ -109,16 +107,16 @@ func Setup(configName string, cfg interface{}, ops ...Option) error {
 	return nil
 }
 
-func setEnvToViper(v *viper.Viper) {
-	v.AutomaticEnv()
-	keys := os.Environ()
-	for i := range keys {
-		cache := strings.Split(keys[i], "=")
-		if strings.Contains(cache[0], "PATH") {
-			continue
-		}
-		if len(cache) > 1 {
-			v.Set(strings.ReplaceAll(strings.ToLower(cache[0]), "_", "."), cache[1])
-		}
-	}
-}
+//func setEnvToViper(v *viper.Viper) {
+//	v.AutomaticEnv()
+//	keys := os.Environ()
+//	for i := range keys {
+//		cache := strings.Split(keys[i], "=")
+//		if strings.Contains(cache[0], "PATH") {
+//			continue
+//		}
+//		if len(cache) > 1 {
+//			v.Set(strings.ReplaceAll(strings.ToLower(cache[0]), "_", "."), cache[1])
+//		}
+//	}
+//}
