@@ -5,6 +5,8 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
 	"net/url"
+	"os"
+	"strings"
 )
 
 var (
@@ -73,17 +75,17 @@ func Setup(configName string, cfg interface{}, ops ...Option) error {
 	for _, o := range ops {
 		o(&opt)
 	}
-	v := viper.NewWithOptions()
-	//自动获取全部的env加入到viper中。（如果环境变量多就全部加进来）默认别名和环境变量名一致
-	if opt.env {
-		v.AutomaticEnv()
-	}
+	v := viper.New()
 	//配置文件位置
 	v.SetConfigFile(configName)
 	//读文件到viper配置中
 	err = v.ReadInConfig()
 	if err != nil {
 		return fmt.Errorf("Fatal error config file: %s \n", err)
+	}
+	//自动获取全部的env加入到viper中。（如果环境变量多就全部加进来）默认别名和环境变量名一致
+	if opt.env {
+		setEnvToViper(v)
 	}
 	// 获取远程配置文件
 	if opt.openRemoteConfig {
@@ -92,7 +94,7 @@ func Setup(configName string, cfg interface{}, ops ...Option) error {
 			if err != nil {
 				return err
 			}
-			if err = v.AddRemoteProvider("remote", fmt.Sprintf("%s://%s", urls.Scheme, urls.Host), urls.Path); err != nil {
+			if err = viper.AddRemoteProvider("remote", fmt.Sprintf("%s://%s", urls.Scheme, urls.Host), urls.Path); err != nil {
 				return err
 			}
 		}
@@ -107,16 +109,16 @@ func Setup(configName string, cfg interface{}, ops ...Option) error {
 	return nil
 }
 
-//func setEnvToViper(v *viper.Viper) {
-//	v.AutomaticEnv()
-//	keys := os.Environ()
-//	for i := range keys {
-//		cache := strings.Split(keys[i], "=")
-//		if strings.Contains(cache[0], "PATH") {
-//			continue
-//		}
-//		if len(cache) > 1 {
-//			v.Set(strings.ReplaceAll(strings.ToLower(cache[0]), "_", "."), cache[1])
-//		}
-//	}
-//}
+func setEnvToViper(v *viper.Viper) {
+	v.AutomaticEnv()
+	keys := os.Environ()
+	for i := range keys {
+		cache := strings.Split(keys[i], "=")
+		if strings.Contains(cache[0], "PATH") {
+			continue
+		}
+		if len(cache) > 1 {
+			v.Set(strings.ToLower(cache[0]), cache[1])
+		}
+	}
+}
