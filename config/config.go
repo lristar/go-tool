@@ -14,14 +14,9 @@ var (
 	//configFileName = flag.String("c", "./configs.yaml", "设置配置文件地址")
 	// 远程配置文件参数 http://127.0.0.1:4001/config/hugo.json
 	//remoteConfigEndPoint = flag.String("rcep", "", "远程配置文件url")
-	defaultTag = "yaml"
+	defaultTag = "json"
 	defaultEnv = true
 )
-
-const InvalidString = "_invalid_string_"
-
-// M add system constant heres
-type M = map[string]interface{}
 
 type (
 	// Option defines the method to customize the config options.
@@ -39,7 +34,7 @@ func newOption() options {
 	return options{env: defaultEnv}
 }
 
-func (o *options) resetTag(m *mapstructure.DecoderConfig) {
+func (o *options) ResetTag(m *mapstructure.DecoderConfig) {
 	m.TagName = o.defaultTag
 	if o.defaultTag == "" {
 		m.TagName = defaultTag
@@ -75,17 +70,17 @@ func Setup(configName string, cfg interface{}, ops ...Option) error {
 	for _, o := range ops {
 		o(&opt)
 	}
-	v := viper.New()
+	v := viper.NewWithOptions()
+	//自动获取全部的env加入到viper中。（如果环境变量多就全部加进来）默认别名和环境变量名一致
+	if opt.env {
+		v.AutomaticEnv()
+	}
 	//配置文件位置
 	v.SetConfigFile(configName)
 	//读文件到viper配置中
 	err = v.ReadInConfig()
 	if err != nil {
 		return fmt.Errorf("Fatal error config file: %s \n", err)
-	}
-	//自动获取全部的env加入到viper中。（如果环境变量多就全部加进来）默认别名和环境变量名一致
-	if opt.env {
-		setEnvToViper(v)
 	}
 	// 获取远程配置文件
 	if opt.openRemoteConfig {
@@ -94,7 +89,7 @@ func Setup(configName string, cfg interface{}, ops ...Option) error {
 			if err != nil {
 				return err
 			}
-			if err = viper.AddRemoteProvider("remote", fmt.Sprintf("%s://%s", urls.Scheme, urls.Host), urls.Path); err != nil {
+			if err = v.AddRemoteProvider("remote", fmt.Sprintf("%s://%s", urls.Scheme, urls.Host), urls.Path); err != nil {
 				return err
 			}
 		}
@@ -103,7 +98,7 @@ func Setup(configName string, cfg interface{}, ops ...Option) error {
 		}
 	}
 	// 系列化成config对象
-	if err = v.Unmarshal(cfg, opt.resetTag); err != nil {
+	if err = v.Unmarshal(cfg, opt.ResetTag); err != nil {
 		return err
 	}
 	return nil
