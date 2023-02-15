@@ -36,7 +36,7 @@ type (
 )
 
 func newOption() options {
-	return options{env: defaultEnv}
+	return options{env: defaultEnv, openWatch: true}
 }
 
 func (o *options) ResetTag(m *mapstructure.DecoderConfig) {
@@ -80,9 +80,9 @@ func ResetTag(tag string) Option {
 	}
 }
 
-func OpenWatch() Option {
+func CloseWatch() Option {
 	return func(opt *options) {
-		opt.openWatch = true
+		opt.openWatch = false
 	}
 }
 
