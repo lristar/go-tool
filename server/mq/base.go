@@ -31,6 +31,13 @@ func NewDefaultRabbitMQ(url string) error {
 	return _rabbitMQ.getConn()
 }
 
+func ClosedDefaultRabbitMQ() error {
+	if !_rabbitMQ.conn.IsClosed() {
+		return _rabbitMQ.conn.Close()
+	}
+	return nil
+}
+
 // GetMQ 获取默认
 func getDefaultRabbitMQ() (*RabbitMQ, error) {
 	if _rabbitMQ == nil {

@@ -1,7 +1,9 @@
 package stringx
 
 import (
+	"encoding/json"
 	"fmt"
+	"gitlab.gf.com.cn/hk-common/go-tool/server/logger"
 	"strconv"
 	"strings"
 )
@@ -40,6 +42,13 @@ func Judge(b bool, v1, v2 string) string {
 		return v1
 	}
 	return v2
+}
+
+func ToStrings(s, split string) []string {
+	if s == "" {
+		return []string{}
+	}
+	return strings.Split(s, split)
 }
 
 func Snake(s string) string {
@@ -81,6 +90,14 @@ func Delete(src []string, dist string) []string {
 		}
 	}
 	return src[:j]
+}
+
+func Marshal(src interface{}) string {
+	bt, err := json.Marshal(src)
+	if err != nil {
+		logger.Error(err)
+	}
+	return string(bt)
 }
 
 func ToArray1(src string) []string {
