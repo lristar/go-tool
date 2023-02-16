@@ -5,6 +5,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	utils "gitlab.gf.com.cn/hk-common/go-tool/lib"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -16,6 +17,11 @@ const (
 	DEFAULTPOOLSIZE     = 10
 	DEFAULTLOCKTIME     = 10 * time.Second
 	DEFAULTLOOPLOCKTIME = 100 * time.Millisecond
+)
+
+var (
+	_cli *RedisClient
+	once sync.Once
 )
 
 type RedisConfig struct {
@@ -45,39 +51,45 @@ func OnConnect(ctx context.Context, cn *redis.Conn) error {
 	return err
 }
 
-func NewRedisClient(config RedisConfig) *RedisClient {
-	op := &redis.FailoverOptions{
-		MasterName:       config.Master,
-		SentinelAddrs:    strings.Split(config.Host, ","),
-		Password:         config.MPassword,
-		SentinelPassword: config.SPassword,
-		ReadTimeout:      DEFAULTTIMEOUT,
-		WriteTimeout:     DEFAULTTIMEOUT,
-		DB:               DEFAULTDB,
-		PoolSize:         DEFAULTPOOLSIZE,
-		OnConnect:        OnConnect,
-	}
-	if config.ReadTimeout != ZERO {
-		op.ReadTimeout = time.Second * time.Duration(config.ReadTimeout)
-	}
-	if config.WriteTimeout != ZERO {
-		op.WriteTimeout = time.Second * time.Duration(config.WriteTimeout)
-	}
-	if config.PoolSize != ZERO {
-		op.PoolSize = config.PoolSize
-	}
-	if config.DB != ZERO {
-		op.PoolSize = config.PoolSize
-	}
-	client := redis.NewFailoverClient(op)
-	client.AddHook(NewHook(config.Group))
-	return &RedisClient{
-		Client:    client,
-		prefixKey: config.Group,
-		LockTime:  0,
-		lockKey:   "",
-		LockMap:   make(map[string]string),
-	}
+func InitRedisClient(config RedisConfig) {
+	once.Do(func() {
+		op := &redis.FailoverOptions{
+			MasterName:       config.Master,
+			SentinelAddrs:    strings.Split(config.Host, ","),
+			Password:         config.MPassword,
+			SentinelPassword: config.SPassword,
+			ReadTimeout:      DEFAULTTIMEOUT,
+			WriteTimeout:     DEFAULTTIMEOUT,
+			DB:               DEFAULTDB,
+			PoolSize:         DEFAULTPOOLSIZE,
+			OnConnect:        OnConnect,
+		}
+		if config.ReadTimeout != ZERO {
+			op.ReadTimeout = time.Second * time.Duration(config.ReadTimeout)
+		}
+		if config.WriteTimeout != ZERO {
+			op.WriteTimeout = time.Second * time.Duration(config.WriteTimeout)
+		}
+		if config.PoolSize != ZERO {
+			op.PoolSize = config.PoolSize
+		}
+		if config.DB != ZERO {
+			op.PoolSize = config.PoolSize
+		}
+		client := redis.NewFailoverClient(op)
+		client.AddHook(NewHook(config.Group))
+		_cli = &RedisClient{
+			Client:    client,
+			prefixKey: config.Group,
+			LockTime:  0,
+			lockKey:   "",
+			LockMap:   make(map[string]string),
+		}
+	})
+}
+
+func NewClient() *RedisClient {
+	return &RedisClient{Client: _cli.Client, prefixKey: _cli.prefixKey, LockMap: make(map[string]string)}
 }
 
 // Lock 通过redis加锁
