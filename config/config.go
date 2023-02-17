@@ -11,6 +11,8 @@ import (
 	"time"
 )
 
+type M map[string]interface{}
+
 var (
 	//useEnv = flag.Bool("env", true, "是否开启读取env")
 	//configFileName = flag.String("c", "./configs.yaml", "设置配置文件地址")

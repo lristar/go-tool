@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"gitlab.gf.com.cn/hk-common/go-tool/config"
 	configs "gitlab.gf.com.cn/hk-common/go-tool/config"
 	myerror "gitlab.gf.com.cn/hk-common/go-tool/lib/error"
 	"log"
@@ -200,7 +201,7 @@ func Contains(source interface{}, condition configs.M) (int, error) {
 
 		sMap := make(map[string]interface{})
 		if item.Kind() == reflect.Map {
-			sMap = (item.Interface()).(configs.M)
+			sMap = (item.Interface()).(config.M)
 		} else if item.Kind() == reflect.Struct {
 			itemType := item.Type()
 			for i := 0; i < itemType.NumField(); i++ {
