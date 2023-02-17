@@ -13,6 +13,7 @@ require (
 	github.com/spf13/viper v1.15.0
 	github.com/streadway/amqp v1.0.0
 	golang.org/x/exp v0.0.0-20230203172020-98cc5a0785f9
+	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22
 	gorm.io/driver/postgres v1.4.7
 	gorm.io/gorm v1.24.5
 	moul.io/http2curl v1.0.0

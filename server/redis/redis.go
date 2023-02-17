@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/go-redis/redis/v8"
 	utils "gitlab.gf.com.cn/hk-common/go-tool/lib"
+	"gitlab.gf.com.cn/hk-common/go-tool/server/logger"
 	"strings"
 	"sync"
 	"time"
@@ -85,6 +86,7 @@ func InitRedisClient(config RedisConfig) {
 			lockKey:   "",
 			LockMap:   make(map[string]string),
 		}
+		logger.Infof("redis:host->%s,master->%s ---\n", config.Host, config.Master)
 	})
 }
 
