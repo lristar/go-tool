@@ -64,6 +64,7 @@ func InitPg(c Config) {
 		// SetConnMaxLifetime 设置了连接可复用的最大时间
 		cons.SetConnMaxLifetime(time.Hour)
 		db = &PgClient{conn}
+		logger.Infof("pg:host->%s,db_name->%s ---\n", c.Host, c.Dbname)
 	})
 }
 
