@@ -9,7 +9,7 @@ import (
 
 // Send  发送到队列支持string/map/struct或对应的数组
 func Send(bodys interface{}, queueName string) error {
-	mq := NewRabbitMQ("amqp://guest:guest@10.68.41.36:8181")
+	mq := NewRabbitMQ("amqp://guest:guest@10.68.41.31:5672")
 	var err error
 	// ensure queue
 	queue := &Queue{
@@ -58,7 +58,7 @@ func Send(bodys interface{}, queueName string) error {
 }
 
 func SendExchange(bodys interface{}, exchangeName, queueName string) error {
-	mq := NewRabbitMQ("amqp://guest:guest@10.68.41.36:8181")
+	mq := NewRabbitMQ("amqp://guest:guest@10.68.41.31:5672")
 	exc := Exchange{
 		Name:       exchangeName,
 		Kind:       ExcKindTopic,

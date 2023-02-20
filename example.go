@@ -10,7 +10,7 @@ import (
 )
 
 func temp1() {
-	if err := mq.InitConnect("amqp://guest:guest@10.68.41.36:8181"); err != nil {
+	if err := mq.InitConnect("amqp://guest:guest@10.68.41.31:5672"); err != nil {
 		panic(err)
 	}
 	pub, err := mq.GetConn().NewPublish("f_lzy", mq.FANOUT, "", true)
@@ -42,7 +42,6 @@ func temp1() {
 		panic(err)
 	}
 	for {
-
 	}
 }
 
@@ -57,7 +56,7 @@ func temp2() {
 			}
 		}
 	}()
-	rb := mq2.NewRabbitMQ("amqp://guest:guest@10.68.41.36:8181")
+	rb := mq2.NewRabbitMQ("amqp://guest:guest@10.68.41.31:5672")
 	c := &mq2.Consumer{QosCount: 1, Queue: &mq2.Queue{Name: "lzy_test", Durable: true}, Handle: hello2}
 
 	if err := rb.Consume(c, true); err != nil {
@@ -68,7 +67,7 @@ func temp2() {
 }
 
 func main() {
-	temp2()
+	temp1()
 }
 func hello2(r *amqp.Delivery, mq *mq2.RabbitMQ, queueName string) {
 	logger.Infof("接收到数据%s", r.Body)
