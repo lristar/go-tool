@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/streadway/amqp"
 	"gitlab.gf.com.cn/hk-common/go-tool/server/logger"
+	"strings"
 	"time"
 )
 
@@ -24,6 +25,32 @@ type Consumer struct {
 }
 
 func (c *Consumer) Receive() error {
+	durable := false
+	autoDelete := true
+	if c.QueueName != "" && !strings.HasPrefix(c.QueueName, "amq.gen-") {
+		durable = true
+		autoDelete = false
+	}
+	// 用于重新刷新接收数据的管道
+	if c.ExchangeName != "" {
+		if strings.HasPrefix(c.QueueName, "amq.gen-") {
+			c.QueueName = ""
+		}
+		queue, err := c.Channel.QueueDeclare(c.QueueName, durable, autoDelete, false, false, nil)
+		if err != nil {
+			return err
+		}
+		c.QueueName = queue.Name
+		if err = c.Channel.QueueBind(c.QueueName, c.Key, c.ExchangeName, false, nil); err != nil {
+			return err
+		}
+	} else {
+		queue, err := c.Channel.QueueDeclare(c.QueueName, durable, autoDelete, false, false, nil)
+		if err != nil {
+			return err
+		}
+		c.QueueName = queue.Name
+	}
 	if err := c.Channel.Qos(c.QosCount, 0, false); err != nil {
 		return err
 	}

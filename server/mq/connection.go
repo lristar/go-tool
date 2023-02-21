@@ -75,22 +75,6 @@ func (c *Connection) NewConsumer(con Consumer, watchClose bool) (*Consumer, erro
 	if _, err := c.newChannel(); err != nil {
 		return nil, err
 	}
-	if con.ExchangeName != "" {
-		queue, err := c.Channel.QueueDeclare(con.QueueName, false, true, false, false, nil)
-		if err != nil {
-			return nil, err
-		}
-		con.QueueName = queue.Name
-		if err := c.Channel.QueueBind(con.QueueName, con.Key, con.ExchangeName, false, nil); err != nil {
-			return nil, err
-		}
-	} else {
-		queue, err := c.Channel.QueueDeclare(con.QueueName, true, false, false, false, nil)
-		if err != nil {
-			return nil, err
-		}
-		con.QueueName = queue.Name
-	}
 	// 用于重新刷新接收数据的管道
 	f := func() {
 		reReceive <- struct{}{}
@@ -101,16 +85,17 @@ func (c *Connection) NewConsumer(con Consumer, watchClose bool) (*Consumer, erro
 		go watchChannel(c, errM, f)
 	}
 	return &Consumer{
-		Connection: c,
-		QueueName:  con.QueueName,
-		AutoAck:    con.AutoAck,
-		Exclusive:  con.Exclusive,
-		NoLocal:    con.NoLocal,
-		NoWait:     con.NoWait,
-		Args:       con.Args,
-		QosCount:   con.QosCount,
-		reReceive:  reReceive,
-		Handle:     con.Handle,
+		Connection:   c,
+		QueueName:    con.QueueName,
+		ExchangeName: con.ExchangeName,
+		AutoAck:      con.AutoAck,
+		Exclusive:    con.Exclusive,
+		NoLocal:      con.NoLocal,
+		NoWait:       con.NoWait,
+		Args:         con.Args,
+		QosCount:     con.QosCount,
+		reReceive:    reReceive,
+		Handle:       con.Handle,
 	}, nil
 }
 
