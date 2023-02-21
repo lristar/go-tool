@@ -30,7 +30,10 @@ type Connection struct {
 // InitConnect 自带重连机制
 func InitConnect(url string) error {
 	var err error
-	con, err := amqp.Dial(url)
+	con, err := amqp.DialConfig(url, amqp.Config{
+		Heartbeat: time.Second * 5,
+		Locale:    "en_US",
+	})
 	if err != nil {
 		return err
 	}
@@ -121,6 +124,7 @@ func watchConn() {
 			con, err := amqp.Dial(conn.url)
 			if err == nil {
 				conn.conn = con
+				conn.conn.ConnectionState()
 				errConnChannel = make(chan *amqp.Error)
 				con.NotifyClose(errConnChannel)
 				go watchConn()

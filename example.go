@@ -17,6 +17,7 @@ func temp1() {
 	if err != nil {
 		panic(err)
 	}
+
 	go func() {
 		for i := 1; i < 10000; i++ {
 			time.Sleep(time.Second * 10)
@@ -67,7 +68,7 @@ func temp2() {
 }
 
 func main() {
-	temp2()
+	temp1()
 }
 func hello2(r *amqp.Delivery, mq *mq2.RabbitMQ, queueName string) {
 	logger.Infof("接收到数据%s", r.Body)
