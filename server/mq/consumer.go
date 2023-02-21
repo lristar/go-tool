@@ -66,7 +66,7 @@ func (c *Consumer) Receive() error {
 								time.Sleep(time.Millisecond * 200)
 								logger.Errorf("Received a message nack false : %s\n", r.MessageId)
 							}
-						} else if err = r.Ack(false); err != nil {
+						} else if err = r.Ack(false); err == nil {
 
 						} else {
 							logger.Errorf("Received a message ack false : %s\n", r.MessageId)
