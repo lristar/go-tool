@@ -67,7 +67,7 @@ func temp2() {
 }
 
 func main() {
-	temp1()
+	temp2()
 }
 func hello2(r *amqp.Delivery, mq *mq2.RabbitMQ, queueName string) {
 	logger.Infof("接收到数据%s", r.Body)
