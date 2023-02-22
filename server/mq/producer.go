@@ -20,6 +20,7 @@ func (p *Producer) Send(bodys interface{}) error {
 	if p.Channel == nil {
 		return fmt.Errorf("channel为空")
 	}
+	defer p.Channel.Close()
 	bType := reflect.TypeOf(bodys)
 	realDatas := make([]interface{}, 0)
 	if bType.Kind() != reflect.Slice {
