@@ -8,7 +8,7 @@ import (
 )
 
 type Producer struct {
-	*Connection
+	*Channel
 	Exchange     string
 	Key          string // queueName or key
 	ExchangeType string
@@ -16,11 +16,36 @@ type Producer struct {
 	Immediate    bool
 }
 
+func NewPublish(exchange, exchangeType, key string, watchClose bool) (*Producer, error) {
+	c, err := conn.newChannel()
+	if err != nil {
+		return nil, err
+	}
+	if exchangeType != "" && exchange != "" {
+		if err := c.ch.ExchangeDeclare(exchange, exchangeType, true, false, false, false, nil); err != nil {
+			return nil, err
+		}
+	}
+	if watchClose {
+		errM := make(chan *amqp.Error)
+		c.ch.NotifyClose(errM)
+		go watchChannel(c, errM, nil)
+	}
+	return &Producer{
+		Channel:      c,
+		Exchange:     exchange,
+		ExchangeType: exchangeType,
+		Key:          key,
+		Mandatory:    false,
+		Immediate:    false,
+	}, nil
+}
+
 func (p *Producer) Send(bodys interface{}) error {
 	if p.Channel == nil {
 		return fmt.Errorf("channel为空")
 	}
-	defer p.Channel.Close()
+	defer p.ch.Close()
 	bType := reflect.TypeOf(bodys)
 	realDatas := make([]interface{}, 0)
 	if bType.Kind() != reflect.Slice {
@@ -39,7 +64,7 @@ func (p *Producer) Send(bodys interface{}) error {
 			bytes, _ := json.Marshal(body)
 			msg = string(bytes)
 		}
-		err := p.Channel.Publish(p.Exchange, p.Key, p.Mandatory, p.Immediate,
+		err := p.ch.Publish(p.Exchange, p.Key, p.Mandatory, p.Immediate,
 			amqp.Publishing{
 				DeliveryMode: amqp.Persistent,
 				ContentType:  "text/plain",
