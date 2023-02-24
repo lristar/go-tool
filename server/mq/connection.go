@@ -3,6 +3,7 @@ package mq
 import (
 	"github.com/streadway/amqp"
 	"gitlab.gf.com.cn/hk-common/go-tool/server/logger"
+	"sync"
 	"time"
 )
 
@@ -20,6 +21,7 @@ var (
 	conn *Connection
 	// 连接错误管道
 	errConnChannel chan *amqp.Error
+	once           sync.Once
 )
 
 type Connection struct {
@@ -28,24 +30,22 @@ type Connection struct {
 }
 
 // InitConnect 自带重连机制
-func InitConnect(url string) error {
-	var err error
-	con, err := amqp.DialConfig(url, amqp.Config{
-		Heartbeat: time.Second * 5,
-		Locale:    "en_US",
+func InitConnect(url string) {
+	once.Do(func() {
+		var err error
+		con, err := amqp.Dial(url)
+		if err != nil {
+			panic(err)
+		}
+		errConnChannel = make(chan *amqp.Error)
+		con.NotifyClose(errConnChannel)
+		// 添加重连机制
+		go watchConn()
+		conn = &Connection{
+			url:  url,
+			conn: con,
+		}
 	})
-	if err != nil {
-		return err
-	}
-	errConnChannel = make(chan *amqp.Error)
-	con.NotifyClose(errConnChannel)
-	// 添加重连机制
-	go watchConn()
-	conn = &Connection{
-		url:  url,
-		conn: con,
-	}
-	return nil
 }
 
 func watchConn() {
@@ -62,7 +62,6 @@ func watchConn() {
 			con, err := amqp.Dial(conn.url)
 			if err == nil {
 				conn.conn = con
-				conn.conn.ConnectionState()
 				errConnChannel = make(chan *amqp.Error)
 				con.NotifyClose(errConnChannel)
 				go watchConn()

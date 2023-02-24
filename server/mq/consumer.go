@@ -24,7 +24,7 @@ type Consumer struct {
 	Handle       func(*amqp.Delivery) error
 }
 
-func NewConsumer(con Consumer, watchClose bool) (*Consumer, error) {
+func NewConsumer(con Consumer) (*Consumer, error) {
 	reReceive := make(chan interface{}, 1)
 	c, err := conn.newChannel()
 	if err != nil {
@@ -34,11 +34,10 @@ func NewConsumer(con Consumer, watchClose bool) (*Consumer, error) {
 	f := func() {
 		reReceive <- struct{}{}
 	}
-	if watchClose {
-		errM := make(chan *amqp.Error)
-		c.ch.NotifyClose(errM)
-		go watchChannel(c, errM, f)
-	}
+	// 开启管道监听
+	errM := make(chan *amqp.Error)
+	c.ch.NotifyClose(errM)
+	go watchChannel(c, errM, f)
 	return &Consumer{
 		Channel:      c,
 		QueueName:    con.QueueName,

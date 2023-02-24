@@ -16,7 +16,7 @@ type Producer struct {
 	Immediate    bool
 }
 
-func NewPublish(exchange, exchangeType, key string, watchClose bool) (*Producer, error) {
+func NewPublish(exchange, exchangeType, key string) (*Producer, error) {
 	c, err := conn.newChannel()
 	if err != nil {
 		return nil, err
@@ -25,11 +25,6 @@ func NewPublish(exchange, exchangeType, key string, watchClose bool) (*Producer,
 		if err := c.ch.ExchangeDeclare(exchange, exchangeType, true, false, false, false, nil); err != nil {
 			return nil, err
 		}
-	}
-	if watchClose {
-		errM := make(chan *amqp.Error)
-		c.ch.NotifyClose(errM)
-		go watchChannel(c, errM, nil)
 	}
 	return &Producer{
 		Channel:      c,
@@ -45,7 +40,9 @@ func (p *Producer) Send(bodys interface{}) error {
 	if p.Channel == nil {
 		return fmt.Errorf("channel为空")
 	}
-	defer p.ch.Close()
+	defer func() {
+		p.ch.Close()
+	}()
 	bType := reflect.TypeOf(bodys)
 	realDatas := make([]interface{}, 0)
 	if bType.Kind() != reflect.Slice {
