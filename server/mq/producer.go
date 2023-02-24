@@ -16,6 +16,7 @@ type Producer struct {
 	Immediate    bool
 }
 
+// NewPublish 发布者不监听管道
 func NewPublish(exchange, exchangeType, key string) (*Producer, error) {
 	c, err := conn.newChannel()
 	if err != nil {
