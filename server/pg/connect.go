@@ -2,7 +2,7 @@ package pgs
 
 import (
 	"fmt"
-	"gitlab.gf.com.cn/hk-common/go-tool/server/logger"
+	"github.com/lristar/go-tool/server/logger"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"sync"

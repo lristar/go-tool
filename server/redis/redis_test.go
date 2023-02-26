@@ -21,8 +21,7 @@ func init() {
 		DB:           0,
 		PoolSize:     0,
 	}
-	rdClient = NewRedisClient(op)
-	rdClient.LockTime = 15 * time.Second
+	InitRedisClient(op)
 }
 
 func TestNewRedisClient(t *testing.T) {

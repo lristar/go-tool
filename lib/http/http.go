@@ -8,10 +8,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/getsentry/raven-go"
+	"github.com/lristar/go-tool/lib/stringx"
+	"github.com/lristar/go-tool/server/sentry"
 	"github.com/opentracing/opentracing-go"
 	tracerLog "github.com/opentracing/opentracing-go/log"
-	"gitlab.gf.com.cn/hk-common/go-tool/lib/stringx"
-	"gitlab.gf.com.cn/hk-common/go-tool/server/sentry"
 	"io"
 	"io/ioutil"
 	"moul.io/http2curl"
@@ -226,7 +226,7 @@ func (r *MyRequest) HTTPDo() ([]byte, error) {
 
 // Sentry 如果状态码为200，但返回的数据不符合预期，手动报警
 func (r *MyRequest) Sentry(e error) {
-	ravenHttp := raven.Http{
+	var ravenHttp = raven.Http{
 		URL:     r.URL,
 		Method:  r.Method,
 		Query:   "",

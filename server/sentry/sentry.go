@@ -1,10 +1,9 @@
 package sentry
 
 import (
-	logger "gitlab.gf.com.cn/hk-common/go-tool/server/logger"
+	raven "github.com/getsentry/raven-go"
+	logger "github.com/lristar/go-tool/server/logger"
 	"io"
-
-	"github.com/getsentry/raven-go"
 )
 
 var cli *raven.Client

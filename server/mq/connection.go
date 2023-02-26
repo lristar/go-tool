@@ -1,8 +1,8 @@
 package mq
 
 import (
+	"github.com/lristar/go-tool/server/logger"
 	"github.com/streadway/amqp"
-	"gitlab.gf.com.cn/hk-common/go-tool/server/logger"
 	"time"
 )
 

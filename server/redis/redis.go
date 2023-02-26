@@ -3,8 +3,8 @@ package myredis
 import (
 	"context"
 	"github.com/go-redis/redis/v8"
-	utils "gitlab.gf.com.cn/hk-common/go-tool/lib"
-	"gitlab.gf.com.cn/hk-common/go-tool/server/logger"
+	utils "github.com/lristar/go-tool/lib"
+	"github.com/lristar/go-tool/server/logger"
 	"strings"
 	"sync"
 	"time"
