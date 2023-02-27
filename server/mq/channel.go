@@ -1,6 +1,7 @@
 package mq
 
 import (
+	"fmt"
 	"github.com/streadway/amqp"
 	"gitlab.gf.com.cn/hk-common/go-tool/server/logger"
 	"time"
@@ -8,6 +9,35 @@ import (
 
 type Channel struct {
 	ch *amqp.Channel // 发布/接收 频道
+}
+
+type PubBody struct {
+	Exchange  string
+	Key       string
+	Mandatory bool
+	Immediate bool
+	Body      amqp.Publishing
+}
+
+// Close 关闭连接的方法
+func (c *Channel) Close() error {
+	return c.ch.Close()
+}
+
+// Ping 检查连接是否有效的方法
+func (c *Channel) Ping() error {
+	return nil
+}
+
+// Use 应用这个连接
+func (c *Channel) Use(v interface{}) error {
+	if v == nil {
+		return fmt.Errorf("请求为空")
+	}
+	if body, ok := v.(PubBody); ok {
+		return c.ch.Publish(body.Exchange, body.Key, body.Mandatory, body.Immediate, body.Body)
+	}
+	return fmt.Errorf("请求对象结构体错误")
 }
 
 func watchChannel(c *Channel, errC chan *amqp.Error, f func()) {

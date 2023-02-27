@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/streadway/amqp"
+	"gitlab.gf.com.cn/hk-common/go-tool/lib/pool"
 	"gitlab.gf.com.cn/hk-common/go-tool/server/logger"
 	"gitlab.gf.com.cn/hk-common/go-tool/server/mq"
 	mq2 "gitlab.gf.com.cn/hk-common/go-tool/server/mq_two"
@@ -11,7 +12,12 @@ import (
 
 func temp1() {
 	mq.InitConnect("amqp://guest:guest@10.68.41.31:5672")
-
+	pool.NewChannelPool(pool.Config{
+		InitialCap:  5,
+		MaxCap:      20,
+		Fac:         mq.Factory,
+		IdleTimeout: 0,
+	})
 	go func() {
 		for i := 1; i < 10000; i++ {
 			for j := 0; j < 2; j++ {

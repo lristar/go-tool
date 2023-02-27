@@ -73,9 +73,9 @@ func watchConn() {
 	}
 }
 
-func (c *Connection) newChannel() (*Channel, error) {
+func Factory() (*Channel, error) {
 	var err error
-	ch, err := c.conn.Channel()
+	ch, err := conn.conn.Channel()
 	if err != nil {
 		return nil, err
 	}

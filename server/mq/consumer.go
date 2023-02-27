@@ -26,7 +26,7 @@ type Consumer struct {
 
 func NewConsumer(con Consumer) (*Consumer, error) {
 	reReceive := make(chan interface{}, 1)
-	c, err := conn.newChannel()
+	c, err := Factory()
 	if err != nil {
 		return nil, err
 	}
