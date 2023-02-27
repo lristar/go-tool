@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/streadway/amqp"
+	"gitlab.gf.com.cn/hk-common/go-tool/lib/pool"
 	"reflect"
 )
 
@@ -18,7 +19,7 @@ type Producer struct {
 
 // NewPublish 发布者不监听管道
 func NewPublish(exchange, exchangeType, key string) (*Producer, error) {
-	c, err := Factory()
+	c, err := conn.newChannel()
 	if err != nil {
 		return nil, err
 	}
@@ -70,6 +71,52 @@ func (p *Producer) Send(bodys interface{}) error {
 				//Expiration:   "10000", // 设置过期时间
 			})
 		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Send 利用连接池的发布者
+func Send(exchange, key string, bodys interface{}) error {
+	p, err := pool.GetPool()
+	if err != nil {
+		return err
+	}
+	bType := reflect.TypeOf(bodys)
+	realDatas := make([]interface{}, 0)
+	if bType.Kind() != reflect.Slice {
+		realDatas = append(realDatas, bodys)
+	} else {
+		value := reflect.ValueOf(bodys)
+		for i := 0; i < value.Len(); i++ {
+			realDatas = append(realDatas, value.Index(i).Interface())
+		}
+	}
+	for _, body := range realDatas {
+		msg := ""
+		if data, ok := body.(string); ok {
+			msg = data
+		} else {
+			bytes, _ := json.Marshal(body)
+			msg = string(bytes)
+		}
+		if err = p.Handle(func(conn pool.IConn) error {
+			if err := conn.Use(PubBody{
+				Exchange:  exchange,
+				Key:       key,
+				Mandatory: false,
+				Immediate: false,
+				Body: amqp.Publishing{
+					DeliveryMode: amqp.Persistent,
+					ContentType:  "text/plain",
+					Body:         []byte(msg),
+				},
+			}); err != nil {
+				return err
+			}
+			return nil
+		}); err != nil {
 			return err
 		}
 	}

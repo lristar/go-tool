@@ -2,6 +2,7 @@ package mq
 
 import (
 	"github.com/streadway/amqp"
+	"gitlab.gf.com.cn/hk-common/go-tool/lib/pool"
 	"gitlab.gf.com.cn/hk-common/go-tool/server/logger"
 	"sync"
 	"time"
@@ -72,14 +73,22 @@ func watchConn() {
 		}
 	}
 }
-
-func Factory() (*Channel, error) {
+func (c *Connection) newChannel() (*Channel, error) {
 	var err error
 	ch, err := conn.conn.Channel()
 	if err != nil {
 		return nil, err
 	}
 	return &Channel{ch: ch}, nil
+}
+
+func Factory() (pool.IConn, error) {
+	var err error
+	ch, err := conn.newChannel()
+	if err != nil {
+		return nil, err
+	}
+	return &Channel{ch: ch.ch}, nil
 }
 
 // IRecover 是想着用策略模式来recover,待实现

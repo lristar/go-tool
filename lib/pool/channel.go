@@ -3,6 +3,7 @@ package pool
 import (
 	"errors"
 	"fmt"
+	"gitlab.gf.com.cn/hk-common/go-tool/server/logger"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -18,6 +19,7 @@ var (
 	ErrClosed = errors.New("pool is closed")
 	// 超时时间
 	DelayTime10s = time.Second * 10
+	pools        *ChannelPool
 )
 
 type (
@@ -43,8 +45,8 @@ type Config struct {
 	IdleTimeout time.Duration
 }
 
-// channelPool 存放连接信息
-type channelPool struct {
+// ChannelPool 存放连接信息
+type ChannelPool struct {
 	Config
 	mu                       sync.RWMutex
 	fac                      Fac
@@ -54,8 +56,8 @@ type channelPool struct {
 	openingConns             int32
 }
 
-// NewChannelPool 初始化连接
-func NewChannelPool(poolConfig Config) (*channelPool, error) {
+// InitPool 初始化连接池
+func InitPool(poolConfig Config) (*ChannelPool, error) {
 	if poolConfig.InitialCap > poolConfig.MaxCap || poolConfig.InitialCap <= 0 {
 		return nil, errors.New("invalid capacity settings")
 	}
@@ -64,7 +66,7 @@ func NewChannelPool(poolConfig Config) (*channelPool, error) {
 		return nil, fmt.Errorf("没有工厂，无法创建")
 	}
 
-	c := &channelPool{
+	pools = &ChannelPool{
 		Config:       poolConfig,
 		conns:        make(chan *idleConn, poolConfig.MaxCap),
 		fac:          poolConfig.Fac,
@@ -74,22 +76,29 @@ func NewChannelPool(poolConfig Config) (*channelPool, error) {
 	}
 
 	for i := 0; i < int(poolConfig.InitialCap); i++ {
-		conn, err := c.factory(false)
+		conn, err := pools.factory(false)
 		if err != nil {
-			c.Release()
+			pools.Release()
 			return nil, fmt.Errorf("factory is not able to fill the pool: %s", err)
 		}
-		if err = c.put(conn); err != nil {
+		if err = pools.put(conn); err != nil {
 			// 如果入管道失败就直接创建失败
-			_ = c.Close()
+			_ = pools.Close()
 			return nil, err
 		}
 	}
-	return c, nil
+	return pools, nil
+}
+
+func GetPool() (*ChannelPool, error) {
+	if pools == nil {
+		return nil, fmt.Errorf("连接池为空")
+	}
+	return pools, nil
 }
 
 // getConns 获取所有连接
-func (c *channelPool) getConns() chan *idleConn {
+func (c *ChannelPool) getConns() chan *idleConn {
 	c.mu.Lock()
 	conns := c.conns
 	c.mu.Unlock()
@@ -97,13 +106,14 @@ func (c *channelPool) getConns() chan *idleConn {
 }
 
 // Handle 从pool内获取连接使用同时放回
-func (c *channelPool) Handle(handle func(conn IConn) error) error {
+func (c *ChannelPool) Handle(handle func(conn IConn) error) error {
 	var (
 		cc  *idleConn // 单个连接
 		err error
 	)
 	for {
 		wrapConn := c.GetConn()
+		logger.Infof("获取旧连接成功")
 		if wrapConn != nil {
 			if c.isRelease(wrapConn) {
 				continue
@@ -115,6 +125,7 @@ func (c *channelPool) Handle(handle func(conn IConn) error) error {
 			if err != nil {
 				return err
 			}
+			logger.Infof("获取新连接成功")
 			goto end
 		}
 	}
@@ -123,7 +134,7 @@ end:
 	return handle(cc.conn)
 }
 
-func (c *channelPool) GetConn() (conn *idleConn) {
+func (c *ChannelPool) GetConn() (conn *idleConn) {
 	select {
 	case conn = <-c.conns:
 		return
@@ -133,7 +144,7 @@ func (c *channelPool) GetConn() (conn *idleConn) {
 }
 
 // Put 将连接放回pool中 这个集成到get里面
-func (c *channelPool) put(conn *idleConn) error {
+func (c *ChannelPool) put(conn *idleConn) error {
 	if conn == nil {
 		return errors.New("connection is nil. rejecting")
 	}
@@ -149,7 +160,7 @@ func (c *channelPool) put(conn *idleConn) error {
 }
 
 // Close 关闭单条连接
-func (c *channelPool) closeOne(conn *idleConn) error {
+func (c *ChannelPool) closeOne(conn *idleConn) error {
 	if conn == nil {
 		return errors.New("connection is nil. rejecting")
 	}
@@ -160,7 +171,7 @@ func (c *channelPool) closeOne(conn *idleConn) error {
 }
 
 // ReleaseOne 判断如果需要释放就释放
-func (c *channelPool) isRelease(conn *idleConn) bool {
+func (c *ChannelPool) isRelease(conn *idleConn) bool {
 	//判断是否超时，超时则丢弃
 	if timeout := c.idleTimeout; timeout > 0 {
 		if conn.timeOut(timeout) {
@@ -178,7 +189,7 @@ func (c *channelPool) isRelease(conn *idleConn) bool {
 }
 
 // Ping 检查单条连接是否有效
-func (c *channelPool) ping(conn *idleConn) error {
+func (c *ChannelPool) ping(conn *idleConn) error {
 	if conn == nil {
 		return errors.New("connection is nil. rejecting")
 	}
@@ -186,7 +197,7 @@ func (c *channelPool) ping(conn *idleConn) error {
 }
 
 // 获取连接，如果没有就重建新连接（如果满了就等待连接池释放的连接，超过十秒报错）
-func (c *channelPool) factory(wait bool) (*idleConn, error) {
+func (c *ChannelPool) factory(wait bool) (*idleConn, error) {
 	if wait {
 		tc := time.NewTicker(DelayTime10s)
 		for {
@@ -226,7 +237,7 @@ func (c *channelPool) factory(wait bool) (*idleConn, error) {
 }
 
 // Release 释放连接池中所有连接 不关闭管道
-func (c *channelPool) Release() {
+func (c *ChannelPool) Release() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -236,7 +247,7 @@ func (c *channelPool) Release() {
 }
 
 // Close 关闭管道并且释放连接
-func (c *channelPool) Close() error {
+func (c *ChannelPool) Close() error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	close(c.conns)
@@ -247,10 +258,10 @@ func (c *channelPool) Close() error {
 }
 
 // Len 连接池中已有的连接
-func (c *channelPool) Len() int {
+func (c *ChannelPool) Len() int {
 	return len(c.getConns())
 }
 
-func (c *channelPool) GetActive() (int32, int) {
-	return c.openingConns, len(c.conns)
+func (c *ChannelPool) GetActive() int32 {
+	return c.openingConns
 }
