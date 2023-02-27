@@ -6,6 +6,7 @@ import (
 	"github.com/lristar/go-tool/server/logger"
 	"github.com/lristar/go-tool/server/mq"
 	"github.com/streadway/amqp"
+	"math/rand"
 	"time"
 )
 
@@ -33,7 +34,8 @@ func temp1() {
 					logger.Error(fmt.Errorf("发送失败 :%d-%d", i, j))
 				}
 			}
-			time.Sleep(time.Second * 10)
+			rand.Seed(time.Now().UnixNano())
+			time.Sleep(time.Second * time.Duration(rand.Intn(9)+1))
 		}
 	}()
 	consumer, err := mq.NewConsumer(mq.Consumer{ExchangeName: "f_lzy", QosCount: 0, Handle: hello})

@@ -35,7 +35,7 @@ func InitConnect(url string) {
 	once.Do(func() {
 		var err error
 		con, err := amqp.DialConfig(url, amqp.Config{
-			Heartbeat: time.Second * 30,
+			Heartbeat: time.Second * 5,
 			Locale:    "en_US",
 		})
 		if err != nil {
