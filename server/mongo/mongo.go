@@ -1,7 +1,7 @@
 package mongo
 
 import (
-	"gitlab.gf.com.cn/hk-common/go-tool/server/logger"
+	"github.com/lristar/go-tool/server/logger"
 	"strings"
 	"sync"
 	"time"

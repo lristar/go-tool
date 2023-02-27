@@ -1,9 +1,9 @@
 package mq
 
 import (
+	"github.com/lristar/go-tool/lib/pool"
+	"github.com/lristar/go-tool/server/logger"
 	"github.com/streadway/amqp"
-	"gitlab.gf.com.cn/hk-common/go-tool/lib/pool"
-	"gitlab.gf.com.cn/hk-common/go-tool/server/logger"
 	"sync"
 	"time"
 )
@@ -34,7 +34,10 @@ type Connection struct {
 func InitConnect(url string) {
 	once.Do(func() {
 		var err error
-		con, err := amqp.Dial(url)
+		con, err := amqp.DialConfig(url, amqp.Config{
+			Heartbeat: time.Second * 30,
+			Locale:    "en_US",
+		})
 		if err != nil {
 			panic(err)
 		}
@@ -52,24 +55,21 @@ func InitConnect(url string) {
 func watchConn() {
 	logger.Infof("开启连接监听")
 	select {
-	case reason, ok := <-errConnChannel:
-		if !ok {
-			logger.Error("连接连接关闭")
-			return
-		}
-		logger.Error("err is:", reason)
-		for ok {
+	case reason := <-errConnChannel:
+		for {
+			logger.Error("err is:", reason)
 			time.Sleep(DelayTime)
 			con, err := amqp.Dial(conn.url)
-			if err == nil {
-				conn.conn = con
-				errConnChannel = make(chan *amqp.Error)
-				con.NotifyClose(errConnChannel)
-				go watchConn()
-				logger.Info("连接重连成功")
-				return
+			if err != nil {
+				logger.Error("连接重连失败")
+				continue
 			}
-			logger.Error("连接重连失败")
+			conn.conn = con
+			errConnChannel = make(chan *amqp.Error)
+			con.NotifyClose(errConnChannel)
+			go watchConn()
+			logger.Info("连接重连成功")
+			return
 		}
 	}
 }

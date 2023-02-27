@@ -3,8 +3,8 @@ package mq
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/lristar/go-tool/lib/pool"
 	"github.com/streadway/amqp"
-	"gitlab.gf.com.cn/hk-common/go-tool/lib/pool"
 	"reflect"
 )
 

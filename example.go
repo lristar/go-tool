@@ -2,15 +2,15 @@ package main
 
 import (
 	"fmt"
+	"github.com/lristar/go-tool/lib/pool"
+	"github.com/lristar/go-tool/server/logger"
+	"github.com/lristar/go-tool/server/mq"
 	"github.com/streadway/amqp"
-	"gitlab.gf.com.cn/hk-common/go-tool/lib/pool"
-	"gitlab.gf.com.cn/hk-common/go-tool/server/logger"
-	"gitlab.gf.com.cn/hk-common/go-tool/server/mq"
 	"time"
 )
 
 func temp1() {
-	mq.InitConnect("amqp://guest:guest@10.68.41.31:5672")
+	mq.InitConnect("amqp://admin:admin@192.168.195.167:5672/test")
 	if _, err := pool.InitPool(pool.Config{
 		InitialCap:  5,
 		MaxCap:      20,

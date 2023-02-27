@@ -3,7 +3,7 @@ package pool
 import (
 	"errors"
 	"fmt"
-	"gitlab.gf.com.cn/hk-common/go-tool/server/logger"
+	"github.com/lristar/go-tool/server/logger"
 	"sync"
 	"sync/atomic"
 	"time"
