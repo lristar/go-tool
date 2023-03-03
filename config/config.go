@@ -88,7 +88,7 @@ func CloseWatch() Option {
 	}
 }
 
-type cfgLock interface {
+type CfgLock interface {
 	// TryLock 尝试加锁
 	TryLock() error
 	// UnLock 需要会自动释放
@@ -96,7 +96,7 @@ type cfgLock interface {
 }
 
 // Setup 载入配置文件
-func Setup(defaultPath string, cfg cfgLock, ops ...Option) error {
+func Setup(defaultPath string, cfg CfgLock, ops ...Option) error {
 	var urls *url.URL
 	var err error
 	opt := newOption()
